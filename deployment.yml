@@ -1,0 +1,217 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order
+spec:
+  selector:
+    matchLabels:
+      app: order
+  template:
+    metadata:
+      labels:
+        app: order
+    spec:
+      containers:
+      - name: order
+        image: moaabb/order-svc:1.0
+        env:
+        - name: PORT
+          value: :3000
+        - name: DB_URL
+          value: postgres://moab:example@db-order-svc:5432/order_svc
+        - name: PRODUCT_SVC_URL
+          value: product-svc:3000
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product
+spec:
+  selector:
+    matchLabels:
+      app: product
+  template:
+    metadata:
+      labels:
+        app: product
+    spec:
+      containers:
+      - name: product
+        image: moaabb/product-svc:1.0
+        env:
+        - name: PORT
+          value: :3000
+        - name: DB_URL
+          value: postgres://moab:example@db-product-svc:5432/product_svc
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+spec:
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+      - name: auth
+        image: moaabb/auth-svc:1.0
+        env:
+        - name: PORT
+          value: :3000
+        - name: DB_URL
+          value: postgres://moab:example@db-auth-svc:5432/auth_svc
+        - name: JWT_SECRET
+          value: r43t18sc
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      imagePullSecrets:
+        - name: myregistrykey
+      containers:
+      - name: api-gateway
+        image: moaabb/api_gateway:1.0
+        env:
+        - name: PORT
+          value: :3000
+        - name: ORDER_SVC_URL
+          value: order-svc:3000
+        - name: PRODUCT_SVC_URL
+          value: product-svc:3000
+        - name: AUTH_SVC_URL
+          value: auth-svc:3000
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-product
+spec:
+  selector:
+    matchLabels:
+      app: db-product
+  template:
+    metadata:
+      labels:
+        app: db-product
+    spec:
+      containers:
+      - name: db-product
+        image: postgres
+        env:
+        - name: POSTGRES_DB
+          value: product_svc
+        - name: POSTGRES_USER
+          value: moab
+        - name: POSTGRES_PASSWORD
+          value: example
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-auth
+spec:
+  selector:
+    matchLabels:
+      app: db-auth
+  template:
+    metadata:
+      labels:
+        app: db-auth
+    spec:
+      containers:
+      - name: db-auth
+        image: postgres
+        env:
+        - name: POSTGRES_DB
+          value: auth_svc
+        - name: POSTGRES_USER
+          value: moab
+        - name: POSTGRES_PASSWORD
+          value: example
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-order
+spec:
+  selector:
+    matchLabels:
+      app: db-order
+  template:
+    metadata:
+      labels:
+        app: db-order
+    spec:
+      containers:
+      - name: db-order
+        image: postgres
+        env:
+        - name: POSTGRES_DB
+          value: order_svc
+        - name: POSTGRES_USER
+          value: moab
+        - name: POSTGRES_PASSWORD
+          value: example
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 5432
